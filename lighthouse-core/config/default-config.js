@@ -99,6 +99,7 @@ module.exports = {
     'uses-rel-preload',
     'font-display',
     'network-requests',
+    'byte-efficiency/total-byte-weight',
     'manual/pwa-cross-browser',
     'manual/pwa-page-transitions',
     'manual/pwa-each-page-has-url',
@@ -157,6 +158,7 @@ module.exports = {
     'byte-efficiency/uses-optimized-images',
     'byte-efficiency/uses-text-compression',
     'byte-efficiency/uses-responsive-images',
+    'byte-efficiency/uses-optimized-animated-images',
     'dobetterweb/appcache-manifest',
     'dobetterweb/dom-size',
     'dobetterweb/external-anchors-use-rel-noopener',
@@ -290,6 +292,7 @@ module.exports = {
         {id: 'screenshot-thumbnails', weight: 0},
         {id: 'mainthread-work-breakdown', weight: 0, group: 'perf-info'},
         {id: 'font-display', weight: 0, group: 'perf-info'},
+        {id: 'uses-optimized-animated-images', weight: 0, group: 'perf-info'},
       ],
     },
     'pwa': {
