@@ -17,7 +17,7 @@ describe('Page uses videos for animated GIFs', () => {
       {
         _resourceType: WebInspector.resourceTypes.Image,
         mimeType: 'image/gif',
-        transferSize: 10000,
+        transferSize: 10240,
       },
       {
         _resourceType: WebInspector.resourceTypes.Image,
