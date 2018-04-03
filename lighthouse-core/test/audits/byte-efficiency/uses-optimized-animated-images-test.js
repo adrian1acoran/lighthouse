@@ -12,17 +12,17 @@ const WebInspector = require('../../../lib/web-inspector');
 const assert = require('assert');
 
 describe('Page uses videos for animated GIFs', () => {
-  it('should flag gifs above 10kb as unoptimized', async () => {
+  it('should flag gifs above 100kb as unoptimized', async () => {
     const networkRecords = [
       {
         _resourceType: WebInspector.resourceTypes.Image,
         mimeType: 'image/gif',
-        transferSize: 10240,
+        transferSize: 100240,
       },
       {
         _resourceType: WebInspector.resourceTypes.Image,
         mimeType: 'image/gif',
-        transferSize: 11000,
+        transferSize: 110000,
       },
     ];
     const artifacts = {
@@ -41,7 +41,7 @@ describe('Page uses videos for animated GIFs', () => {
       {
         mimeType: 'image/gif',
         _resourceType: WebInspector.resourceTypes.Media,
-        transferSize: 15000,
+        transferSize: 150000,
       },
     ];
     const artifacts = {
@@ -60,12 +60,12 @@ describe('Page uses videos for animated GIFs', () => {
       {
         _resourceType: WebInspector.resourceTypes.Document,
         mimeType: 'text/html',
-        transferSize: 15000,
+        transferSize: 150000,
       },
       {
         _resourceType: WebInspector.resourceTypes.Stylesheet,
         mimeType: 'text/css',
-        transferSize: 15000,
+        transferSize: 150000,
       },
     ];
     const artifacts = {
