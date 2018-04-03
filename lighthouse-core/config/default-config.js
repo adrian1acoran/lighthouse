@@ -99,7 +99,6 @@ module.exports = {
     'uses-rel-preload',
     'font-display',
     'network-requests',
-    'byte-efficiency/total-byte-weight',
     'manual/pwa-cross-browser',
     'manual/pwa-page-transitions',
     'manual/pwa-each-page-has-url',
