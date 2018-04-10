@@ -19,37 +19,37 @@ module.exports = [
         score: 1,
       },
       'uses-http2': {
-        score: false,
+        score: 0,
       },
       'external-anchors-use-rel-noopener': {
-        score: true,
+        score: 1,
       },
       'appcache-manifest': {
-        score: true,
+        score: 1,
       },
       'geolocation-on-start': {
-        score: true,
+        score: 1,
       },
       'link-blocking-first-paint': {
-        score: 100,
+        score: 1,
       },
       'no-document-write': {
-        score: true,
+        score: 1,
       },
       'no-mutation-events': {
-        score: true,
+        score: 1,
       },
       'no-websql': {
-        score: true,
+        score: 1,
       },
       'script-blocking-first-paint': {
-        score: 100,
+        score: 1,
       },
       'uses-passive-event-listeners': {
-        score: true,
+        score: 1,
       },
       'password-inputs-can-be-pasted-into': {
-        score: true,
+        score: 1,
       },
       'redirects-http': {
         score: 0,
