@@ -318,7 +318,7 @@ let failingCount = 0;
 expectations.forEach(expected => {
   console.log(`Doing a run of '${expected.initialUrl}'...`);
   const results = runLighthouse(expected.initialUrl, configPath, cli.debug);
-  
+
   console.log(`Auditing findings of '${expected.initialUrl}':`);
   const collated = collateResults(results, expected);
   const counts = report(collated);
