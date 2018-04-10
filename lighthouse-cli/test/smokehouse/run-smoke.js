@@ -103,7 +103,7 @@ async function runSmokehouse(smokes) {
     ].join(' ');
 
     // The promise ensures we output immediately, even if the process errors
-    const p = execAsync(cmd, {timeout: 5 * 60 * 1000, encoding: 'utf8'}).then(cp => {
+    const p = execAsync(cmd, {timeout: 3 * 60 * 1000, encoding: 'utf8'}).then(cp => {
       const ret = {id: id, process: cp};
       displaySmokehouseOutput(ret);
       return ret;
