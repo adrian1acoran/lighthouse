@@ -221,7 +221,9 @@ function reportAssertion(assertion) {
   ${log.redify(log.cross)} difference at ${log.bold}${diff.path}${log.reset}
               expected: ${JSON.stringify(diff.expected)}
                  found: ${JSON.stringify(diff.actual)}
-          found result: ${log.redify(fullActual)}
+
+          found result:
+      ${log.redify(fullActual)}
 `;
       console.log(msg);
     } else {
@@ -285,9 +287,9 @@ const expectations = require(resolveLocalOrCwd(cli['expectations-path']));
 let passingCount = 0;
 let failingCount = 0;
 expectations.forEach(expected => {
-  console.log(`Running '${expected.initialUrl}'...`);
+  console.log(`Doing a run of '${expected.initialUrl}'...`);
   const results = runLighthouse(expected.initialUrl, configPath);
-  console.log(`Comparing results of '${expected.initialUrl}':`);
+  console.log(`Auditing findings of '${expected.initialUrl}':`);
   const collated = collateResults(results, expected);
   const counts = report(collated);
   passingCount += counts.passed;

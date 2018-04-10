@@ -52,18 +52,22 @@ const SMOKETESTS = [{
   config: smokehouseDir + 'pwa-config.js',
 }];
 
-const purpleify = str => `${log.purple}${str}${log.reset}`;
 /**
  * Display smokehouse output from child process
  * @param {{id: string, process?: NodeJS.Process, code?: number}} cp
  */
-function displayOutput(result) {
+function displaySmokehouseOutput(result) {
+  const purpleify = str => `${log.purple}${str}${log.reset}`;
+
   console.log(`\n\nResults for: ${purpleify(result.id)}`);
   if (result.error) {
     console.log(result.error.message);
+    process.stdout.write(result.error.stdout);
+    process.stderr.write(result.error.stderr);
+  } else {
+    process.stdout.write(result.process.stdout);
+    process.stderr.write(result.process.stderr);
   }
-  process.stdout.write(result.error.stdout);
-  process.stderr.write(result.error.stderr);
   console.log(`End of results for: ${purpleify(result.id)}  \n\n`);
 }
 
@@ -72,7 +76,7 @@ function displayOutput(result) {
  * Display output from each as soon as they finish, but resolve function when ALL are complete
  * @param {*} smokes
  */
-async function runLH(smokes) {
+async function runSmokehouse(smokes) {
   const cmdPromises = [];
   for (const {id, expectations, config} of smokes) {
     console.log(`Starting smoketest for ${id}`);
@@ -83,11 +87,11 @@ async function runLH(smokes) {
     ].join(' ');
     const p = execAsync(cmd, {timeout: 5 * 60 * 1000, encoding: 'utf8'}).then(cp => {
       const ret = {id: id, process: cp};
-      displayOutput(ret);
+      displaySmokehouseOutput(ret);
       return ret;
     }).catch(err => {
       const ret = {id: id, error: err};
-      displayOutput(ret);
+      displaySmokehouseOutput(ret);
       return ret;
     });
     cmdPromises.push(p);
@@ -100,7 +104,6 @@ async function runLH(smokes) {
  * Main function. Run webservers, smokehouse, then report on failures
  */
 async function init() {
-  // start webservers
   server.listen(10200, 'localhost');
   serverForOffline.listen(10503, 'localhost');
 
@@ -109,13 +112,13 @@ async function init() {
   if (argv.length === 0) {
     smokes = SMOKETESTS;
     console.log('Running ALL smoketests. Equivalent to:');
-    console.log(`    yarn smoke ${smokes.map(t => t.id).join(' ')}\n`);
+    console.log(`    ${log.dim}yarn smoke ${smokes.map(t => t.id).join(' ')}${log.reset}\n`);
   } else {
     smokes = SMOKETESTS.filter(test => argv.includes(test.id));
     console.log(`Running ONLY smoketests for: ${smokes.map(t => t.id).join(' ')}\n`);
   }
 
-  const smokeResults = await runLH(smokes);
+  const smokeResults = await runSmokehouse(smokes);
 
   await new Promise(res => server.close(res));
   await new Promise(res => serverForOffline.close(res));
@@ -132,5 +135,3 @@ async function init() {
 }
 
 init();
-
-
