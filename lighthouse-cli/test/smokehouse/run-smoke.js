@@ -15,6 +15,15 @@ const log = require('lighthouse-logger');
 const purpleify = str => `${log.purple}${str}${log.reset}`;
 const smokehouseDir = 'lighthouse-cli/test/smokehouse/';
 
+/**
+ * @typedef {object} SmoketestDfn
+ * @property {string} id
+ * @property {string} expectations
+ * @property {string} config
+ * @property {string | undefined} batch
+ */
+
+/** @type {Array<SmoketestDfn>} */
 const SMOKETESTS = [{
   id: 'ally',
   config: smokehouseDir + 'a11y/a11y-config.js',
@@ -47,12 +56,12 @@ const SMOKETESTS = [{
   id: 'byte',
   expectations: 'byte-efficiency/expectations.js',
   config: smokehouseDir + 'byte-config.js',
-  perfSensitive: true,
+  batch: 'perf',
 }, {
   id: 'perf',
   expectations: 'perf/expectations.js',
   config: 'lighthouse-core/config/perf-config.js',
-  perfSensitive: true,
+  batch: 'perf',
 }, {
   id: 'ttci',
   expectations: 'tricky-ttci/expectations.js',
@@ -61,7 +70,7 @@ const SMOKETESTS = [{
 
 /**
  * Display smokehouse output from child process
- * @param {{id: string, process?: NodeJS.Process, code?: number}} cp
+ * @param {{id: string, process: NodeJS.Process} || {id: string, error: Error & {stdout : NodeJS.WriteStream, stderr: NodeJS.WriteStream}}} result
  */
 function displaySmokehouseOutput(result) {
   console.log(`\n${purpleify(result.id)} smoketest results:`);
@@ -73,28 +82,27 @@ function displaySmokehouseOutput(result) {
     process.stdout.write(result.process.stdout);
     process.stderr.write(result.process.stderr);
   }
+  console.timeEnd(`smoketest-${result.id}`);
   console.log(`${purpleify(result.id)} smoketest complete. \n`);
 }
 
 /**
  * Run smokehouse in child processes for selected smoketests
  * Display output from each as soon as they finish, but resolve function when ALL are complete
- * @param {*} smokes
+ * @param {Array<SmoketestDfn>} smokes
  */
 async function runSmokehouse(smokes) {
   const cmdPromises = [];
   for (const {id, expectations, config} of smokes) {
-    // If the machine is terribly slow, do them in succession, not parallel
-    if (process.env.APPVEYOR) {
-      await Promise.all(cmdPromises);
-    }
-
     console.log(`${purpleify(id)} smoketest starting…`);
+    console.time(`smoketest-${id}`);
     const cmd = [
       'node lighthouse-cli/test/smokehouse/smokehouse.js',
       `--config-path=${config}`,
       `--expectations-path=${expectations}`,
     ].join(' ');
+
+    // The promise ensures we output immediately, even if the process errors
     const p = execAsync(cmd, {timeout: 5 * 60 * 1000, encoding: 'utf8'}).then(cp => {
       const ret = {id: id, process: cp};
       displaySmokehouseOutput(ret);
@@ -104,6 +112,11 @@ async function runSmokehouse(smokes) {
       displaySmokehouseOutput(ret);
       return ret;
     });
+
+    // If the machine is terribly slow, we'll run all smoketests in succession, not parallel
+    if (process.env.APPVEYOR) {
+      await p;
+    }
     cmdPromises.push(p);
   }
 
@@ -111,34 +124,60 @@ async function runSmokehouse(smokes) {
 }
 
 /**
- * Main function. Run webservers, smokehouse, then report on failures
+ *
+ * @param {string[]} argv
+ * @return {Map<string, Array<SmoketestDfn>>}
  */
-async function init() {
-  server.listen(10200, 'localhost');
-  serverForOffline.listen(10503, 'localhost');
-
+function getSmoketestBatches(argv) {
   let smokes = [];
-  const argv = process.argv.slice(2);
+  const usage = `    ${log.dim}yarn smoke ${SMOKETESTS.map(t => t.id).join(' ')}${log.reset}\n`;
+
   if (argv.length === 0) {
     smokes = SMOKETESTS;
     console.log('Running ALL smoketests. Equivalent to:');
-    console.log(`    ${log.dim}yarn smoke ${smokes.map(t => t.id).join(' ')}${log.reset}\n`);
+    console.log(usage);
   } else {
     smokes = SMOKETESTS.filter(test => argv.includes(test.id));
     console.log(`Running ONLY smoketests for: ${smokes.map(t => t.id).join(' ')}\n`);
   }
 
-  const parallelSmokes = SMOKETESTS.filter(t => !t.perfSensitive);
-  const serialSmokes = SMOKETESTS.filter(t => t.perfSensitive);
+  const unmatchedIds = argv.filter(requestedId => !SMOKETESTS.map(t => t.id).includes(requestedId));
+  if (unmatchedIds.length) {
+    console.log(log.redify(`Smoketests not found for: ${unmatchedIds.join(' ')}`));
+    console.log(usage);
+  }
 
-  const smokeResults = await runSmokehouse(parallelSmokes);
-  const serialSmokeResults = await runSmokehouse(serialSmokes);
-  smokeResults.push(...serialSmokeResults);
+  // Split into serial batches that will run their tests concurrently
+  const batches = smokes.reduce((map, test) => {
+    const batch = map.get(test.batch) || [];
+    batch.push(test);
+    return map.set(test.batch, batch);
+  }, new Map());
 
-  await new Promise(res => server.close(res));
-  await new Promise(res => serverForOffline.close(res));
+  return batches;
+}
 
-  const failingTests = smokeResults.filter(res => !!res.error);
+/**
+ * Main function. Run webservers, smokehouse, then report on failures
+ */
+async function cli() {
+  server.listen(10200, 'localhost');
+  serverForOffline.listen(10503, 'localhost');
+
+  const argv = process.argv.slice(2);
+  const batches = getSmoketestBatches(argv);
+
+  const smokeResults = [];
+  for (const [batchName, batch] of batches) {
+    console.log(`Smoketest batch: ${batchName || 'default'}`);
+    const results = await runSmokehouse(batch);
+    smokeResults.push(...results);
+  }
+
+  await new Promise(resolve => server.close(resolve));
+  await new Promise(resolve => serverForOffline.close(resolve));
+
+  const failingTests = smokeResults.filter(result => !!result.error);
 
   if (failingTests.length) {
     const testNames = failingTests.map(t => t.id).join(', ');
@@ -149,4 +188,4 @@ async function init() {
   process.exit(0);
 }
 
-init();
+cli();
