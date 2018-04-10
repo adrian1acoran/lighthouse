@@ -20,6 +20,14 @@ const SMOKETESTS = [{
   config: smokehouseDir + 'a11y/a11y-config.js',
   expectations: 'a11y/expectations.js',
 }, {
+  id: 'pwa',
+  expectations: smokehouseDir + 'pwa-expectations.js',
+  config: smokehouseDir + 'pwa-config.js',
+}, {
+  id: 'pwa2',
+  expectations: smokehouseDir + 'pwa2-expectations.js',
+  config: smokehouseDir + 'pwa-config.js',
+}, {
   id: 'dbw',
   expectations: 'dobetterweb/dbw-expectations.js',
   config: smokehouseDir + 'dbw-config.js',
@@ -49,10 +57,6 @@ const SMOKETESTS = [{
   id: 'ttci',
   expectations: 'tricky-ttci/expectations.js',
   config: 'lighthouse-core/config/default-config.js',
-}, {
-  id: 'pwa',
-  expectations: smokehouseDir + 'pwa-expectations.js',
-  config: smokehouseDir + 'pwa-config.js',
 }];
 
 /**
