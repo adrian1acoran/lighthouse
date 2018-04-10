@@ -12,6 +12,7 @@ const Audit = require('../audit');
 const WebInspector = require('../../lib/web-inspector');
 
 // the threshold for the size of GIFs which we flag as unoptimized
+// see https://github.com/GoogleChrome/lighthouse/pull/4885#discussion_r178406623
 const GIF_BYTE_THRESHOLD = 100 * 1024;
 
 class UsesOptimizedAnimatedImages extends Audit {
