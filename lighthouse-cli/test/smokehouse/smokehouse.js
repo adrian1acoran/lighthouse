@@ -287,7 +287,7 @@ function report(results) {
   });
 
   const plural = correctCount === 1 ? '' : 's';
-  const correctStr = `${correctCount} audit${plural}`;
+  const correctStr = `${correctCount} assertion${plural}`;
   const colorFn = correctCount === 0 ? log.redify : log.greenify;
   console.log(`  Correctly passed ${colorFn(correctStr)}\n`);
 

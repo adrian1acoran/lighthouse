@@ -12,6 +12,7 @@ const execAsync = promisify(require('child_process').exec);
 const {server, serverForOffline} = require('../fixtures/static-server');
 const log = require('lighthouse-logger');
 
+const purpleify = str => `${log.purple}${str}${log.reset}`;
 const smokehouseDir = 'lighthouse-cli/test/smokehouse/';
 
 const SMOKETESTS = [{
@@ -38,10 +39,12 @@ const SMOKETESTS = [{
   id: 'byte',
   expectations: 'byte-efficiency/expectations.js',
   config: smokehouseDir + 'byte-config.js',
+  perfSensitive: true,
 }, {
   id: 'perf',
   expectations: 'perf/expectations.js',
   config: 'lighthouse-core/config/perf-config.js',
+  perfSensitive: true,
 }, {
   id: 'ttci',
   expectations: 'tricky-ttci/expectations.js',
@@ -57,9 +60,7 @@ const SMOKETESTS = [{
  * @param {{id: string, process?: NodeJS.Process, code?: number}} cp
  */
 function displaySmokehouseOutput(result) {
-  const purpleify = str => `${log.purple}${str}${log.reset}`;
-
-  console.log(`\n\nResults for: ${purpleify(result.id)}`);
+  console.log(`\n${purpleify(result.id)} smoketest results:`);
   if (result.error) {
     console.log(result.error.message);
     process.stdout.write(result.error.stdout);
@@ -68,7 +69,7 @@ function displaySmokehouseOutput(result) {
     process.stdout.write(result.process.stdout);
     process.stderr.write(result.process.stderr);
   }
-  console.log(`End of results for: ${purpleify(result.id)}  \n\n`);
+  console.log(`${purpleify(result.id)} smoketest complete. \n`);
 }
 
 /**
@@ -79,7 +80,12 @@ function displaySmokehouseOutput(result) {
 async function runSmokehouse(smokes) {
   const cmdPromises = [];
   for (const {id, expectations, config} of smokes) {
-    console.log(`Starting smoketest for ${id}`);
+    // If the machine is terribly slow, do them in succession, not parallel
+    if (process.env.APPVEYOR) {
+      await Promise.all(cmdPromises);
+    }
+
+    console.log(`${purpleify(id)} smoketest starting…`);
     const cmd = [
       'node lighthouse-cli/test/smokehouse/smokehouse.js',
       `--config-path=${config}`,
@@ -118,7 +124,12 @@ async function init() {
     console.log(`Running ONLY smoketests for: ${smokes.map(t => t.id).join(' ')}\n`);
   }
 
-  const smokeResults = await runSmokehouse(smokes);
+  const parallelSmokes = SMOKETESTS.filter(t => !t.perfSensitive);
+  const serialSmokes = SMOKETESTS.filter(t => t.perfSensitive);
+
+  const smokeResults = await runSmokehouse(parallelSmokes);
+  const serialSmokeResults = await runSmokehouse(serialSmokes);
+  smokeResults.push(...serialSmokeResults);
 
   await new Promise(res => server.close(res));
   await new Promise(res => serverForOffline.close(res));
