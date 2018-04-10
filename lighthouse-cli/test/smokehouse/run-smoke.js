@@ -5,105 +5,132 @@
  */
 'use strict';
 
+/* eslint-disable no-console */
 const {promisify} = require('util');
 const execAsync = promisify(require('child_process').exec);
 
 const {server, serverForOffline} = require('../fixtures/static-server');
+const log = require('lighthouse-logger');
 
 const smokehouseDir = 'lighthouse-cli/test/smokehouse/';
 
-const smokes = {
-  'ally': {
-    config: smokehouseDir + 'a11y/a11y-config.js',
-    expectations: 'a11y/expectations.js',
-  },
-  'dbw': {
-    expectations: 'dobetterweb/dbw-expectations.js',
-    config: smokehouseDir + 'dbw-config.js',
-  },
-  'redirects': {
-    expectations: 'redirects/expectations.js',
-    config: smokehouseDir + 'redirects-config.js',
-  },
-  'seo': {
-    expectations: 'seo/expectations.js',
-    config: smokehouseDir + 'seo-config.js',
-  },
-  'offline': {
-    expectations: 'offline-local/offline-expectations.js',
-    config: smokehouseDir + 'offline-config.js',
-  },
-  'byte': {
-    expectations: 'byte-efficiency/expectations.js',
-    config: smokehouseDir + 'byte-config.js',
-  },
-  'perf': {
-    expectations: 'perf/expectations.js',
-    config: 'lighthouse-core/config/perf-config.js',
-  },
-  'ttci': {
-    expectations: 'tricky-ttci/expectations.js',
-    config: 'lighthouse-core/config/default-config.js',
-  },
-  'pwa': {
-    expectations: smokehouseDir + 'pwa-expectations.js',
-    config: smokehouseDir + 'pwa-config.js',
-  },
-};
+const SMOKETESTS = [{
+  id: 'ally',
+  config: smokehouseDir + 'a11y/a11y-config.js',
+  expectations: 'a11y/expectations.js',
+}, {
+  id: 'dbw',
+  expectations: 'dobetterweb/dbw-expectations.js',
+  config: smokehouseDir + 'dbw-config.js',
+}, {
+  id: 'redirects',
+  expectations: 'redirects/expectations.js',
+  config: smokehouseDir + 'redirects-config.js',
+}, {
+  id: 'seo',
+  expectations: 'seo/expectations.js',
+  config: smokehouseDir + 'seo-config.js',
+}, {
+  id: 'offline',
+  expectations: 'offline-local/offline-expectations.js',
+  config: smokehouseDir + 'offline-config.js',
+}, {
+  id: 'byte',
+  expectations: 'byte-efficiency/expectations.js',
+  config: smokehouseDir + 'byte-config.js',
+}, {
+  id: 'perf',
+  expectations: 'perf/expectations.js',
+  config: 'lighthouse-core/config/perf-config.js',
+}, {
+  id: 'ttci',
+  expectations: 'tricky-ttci/expectations.js',
+  config: 'lighthouse-core/config/default-config.js',
+}, {
+  id: 'pwa',
+  expectations: smokehouseDir + 'pwa-expectations.js',
+  config: smokehouseDir + 'pwa-config.js',
+}];
 
-
-function displayOutput(cp) {
-  console.log('\n\n')
-  console.log(`Results for: ${cp.id}`);
-  if (cp.code) {
-    console.log(cp.message);
+const purpleify = str => `${log.purple}${str}${log.reset}`;
+/**
+ * Display smokehouse output from child process
+ * @param {{id: string, process?: NodeJS.Process, code?: number}} cp
+ */
+function displayOutput(result) {
+  console.log(`\n\nResults for: ${purpleify(result.id)}`);
+  if (result.error) {
+    console.log(result.error.message);
   }
-  process.stdout.write(cp.stdout);
-  process.stderr.write(cp.stderr);
-  console.log(`End of results for: ${cp.id}`);
-  console.log('\n\n')
+  process.stdout.write(result.error.stdout);
+  process.stderr.write(result.error.stderr);
+  console.log(`End of results for: ${purpleify(result.id)}  \n\n`);
 }
 
 /**
- * Update the report artifacts
+ * Run smokehouse in child processes for selected smoketests
+ * Display output from each as soon as they finish, but resolve function when ALL are complete
+ * @param {*} smokes
  */
-async function run() {
-  // start webservers
-  server.listen(10200, 'localhost');
-  serverForOffline.listen(10503, 'localhost');
-
+async function runLH(smokes) {
   const cmdPromises = [];
-  for (const [id, {expectations, config}] of Object.entries(smokes)) {
-    console.log(`Running smoketest for ${id}`);
-    const cmd = `yarn smokehouse --config-path=${config} --expectations-path=${expectations}`;
+  for (const {id, expectations, config} of smokes) {
+    console.log(`Starting smoketest for ${id}`);
+    const cmd = [
+      'node lighthouse-cli/test/smokehouse/smokehouse.js',
+      `--config-path=${config}`,
+      `--expectations-path=${expectations}`,
+    ].join(' ');
     const p = execAsync(cmd, {timeout: 5 * 60 * 1000, encoding: 'utf8'}).then(cp => {
-      cp.id = id;
-      displayOutput(cp);
-      return cp;
-    }).catch(e => {
-      e.code = e.code || 1;
-      e.id = id;
-      displayOutput(e);
-      return e;
+      const ret = {id: id, process: cp};
+      displayOutput(ret);
+      return ret;
+    }).catch(err => {
+      const ret = {id: id, error: err};
+      displayOutput(ret);
+      return ret;
     });
     cmdPromises.push(p);
   }
 
-  const smokeResults = await Promise.all(cmdPromises);
+  return Promise.all(cmdPromises);
+}
+
+/**
+ * Main function. Run webservers, smokehouse, then report on failures
+ */
+async function init() {
+  // start webservers
+  server.listen(10200, 'localhost');
+  serverForOffline.listen(10503, 'localhost');
+
+  let smokes = [];
+  const argv = process.argv.slice(2);
+  if (argv.length === 0) {
+    smokes = SMOKETESTS;
+    console.log('Running ALL smoketests. Equivalent to:');
+    console.log(`    yarn smoke ${smokes.map(t => t.id).join(' ')}\n`);
+  } else {
+    smokes = SMOKETESTS.filter(test => argv.includes(test.id));
+    console.log(`Running ONLY smoketests for: ${smokes.map(t => t.id).join(' ')}\n`);
+  }
+
+  const smokeResults = await runLH(smokes);
 
   await new Promise(res => server.close(res));
   await new Promise(res => serverForOffline.close(res));
 
-  const failingTests = smokeResults.filter(res => !!res.code);
+  const failingTests = smokeResults.filter(res => !!res.error);
+
   if (failingTests.length) {
     const testNames = failingTests.map(t => t.id).join(', ');
-    console.error(`We have ${failingTests.length} failing smoketests: ${testNames}`);
+    console.error(log.redify(`We have ${failingTests.length} failing smoketests: ${testNames}`));
     process.exit(1);
   }
 
   process.exit(0);
 }
 
-run();
+init();
 
 
