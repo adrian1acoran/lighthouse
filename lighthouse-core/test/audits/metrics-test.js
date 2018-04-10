@@ -34,13 +34,13 @@ describe('Performance: metrics', () => {
       firstContentfulPaint: 2038,
       firstMeaningfulPaint: 2851,
       timeToInteractive: 5308,
-      rawNavigationStart: 0,
-      rawFirstPaint: 499,
-      rawFirstContentfulPaint: 499,
-      rawFirstMeaningfulPaint: 783,
-      rawTraceEnd: 12540,
-      rawLoad: 2199,
-      rawDomContentLoaded: 560,
+      traceNavigationStart: 0,
+      traceFirstPaint: 499,
+      traceFirstContentfulPaint: 499,
+      traceFirstMeaningfulPaint: 783,
+      traceTraceEnd: 12540,
+      traceLoad: 2199,
+      traceDomContentLoaded: 560,
     });
   });
 });

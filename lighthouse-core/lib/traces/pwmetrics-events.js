@@ -24,13 +24,13 @@ function safeGet(object, path) {
   return object;
 }
 
-function findValueInMetricsAuditFn(metricName, valueName) {
+function findValueInMetricsAuditFn(metricName, timingOrTimestamp) {
   return auditResults => {
     const metricsAudit = auditResults.metrics;
     if (!metricsAudit || !metricsAudit.details || !metricsAudit.details.items) return;
 
     const values = metricsAudit.details.items.find(item => item.metricName === metricName);
-    return values && values[valueName];
+    return values && values[timingOrTimestamp];
   };
 }
 
@@ -49,20 +49,20 @@ class Metrics {
       {
         name: 'Navigation Start',
         id: 'navstart',
-        getTs: findValueInMetricsAuditFn('rawNavigationStart', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawNavigationStart', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceNavigationStart', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceNavigationStart', 'timing'),
       },
       {
         name: 'First Contentful Paint',
         id: 'ttfcp',
-        getTs: findValueInMetricsAuditFn('rawFirstContentfulPaint', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawFirstContentfulPaint', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceFirstContentfulPaint', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceFirstContentfulPaint', 'timing'),
       },
       {
         name: 'First Meaningful Paint',
         id: 'ttfmp',
-        getTs: findValueInMetricsAuditFn('rawFirstMeaningfulPaint', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawFirstMeaningfulPaint', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceFirstMeaningfulPaint', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceFirstMeaningfulPaint', 'timing'),
       },
       {
         name: 'Perceptual Speed Index',
@@ -139,20 +139,20 @@ class Metrics {
       {
         name: 'End of Trace',
         id: 'eot',
-        getTs: findValueInMetricsAuditFn('rawTraceEnd', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawTraceEnd', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceTraceEnd', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceTraceEnd', 'timing'),
       },
       {
         name: 'On Load',
         id: 'onload',
-        getTs: findValueInMetricsAuditFn('rawLoad', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawLoad', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceLoad', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceLoad', 'timing'),
       },
       {
         name: 'DOM Content Loaded',
         id: 'dcl',
-        getTs: findValueInMetricsAuditFn('rawDomContentLoaded', 'timestamp'),
-        getTiming: findValueInMetricsAuditFn('rawDomContentLoaded', 'timing'),
+        getTs: findValueInMetricsAuditFn('traceDomContentLoaded', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('traceDomContentLoaded', 'timing'),
       },
     ];
   }
