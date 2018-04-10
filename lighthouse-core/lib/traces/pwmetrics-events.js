@@ -24,6 +24,16 @@ function safeGet(object, path) {
   return object;
 }
 
+function findValueInMetricsAuditFn(metricName, valueName) {
+  return auditResults => {
+    const metricsAudit = auditResults.metrics;
+    if (!metricsAudit || !metricsAudit.details || !metricsAudit.details.items) return;
+
+    const values = metricsAudit.details.items.find(item => item.metricName === metricName);
+    return values && values[valueName];
+  };
+}
+
 class Metrics {
   constructor(traceEvents, auditResults) {
     this._traceEvents = traceEvents;
@@ -39,38 +49,20 @@ class Metrics {
       {
         name: 'Navigation Start',
         id: 'navstart',
-        getTs: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timestamps.navStart');
-        },
-        getTiming: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timings.navStart');
-        },
+        getTs: findValueInMetricsAuditFn('rawNavigationStart', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawNavigationStart', 'timing'),
       },
       {
         name: 'First Contentful Paint',
         id: 'ttfcp',
-        getTs: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timestamps.fCP');
-        },
-        getTiming: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timings.fCP');
-        },
+        getTs: findValueInMetricsAuditFn('rawFirstContentfulPaint', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawFirstContentfulPaint', 'timing'),
       },
       {
         name: 'First Meaningful Paint',
         id: 'ttfmp',
-        getTs: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timestamps.fMP');
-        },
-        getTiming: auditResults => {
-          const fmpExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(fmpExt, 'value.timings.fMP');
-        },
+        getTs: findValueInMetricsAuditFn('rawFirstMeaningfulPaint', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawFirstMeaningfulPaint', 'timing'),
       },
       {
         name: 'Perceptual Speed Index',
@@ -147,26 +139,20 @@ class Metrics {
       {
         name: 'End of Trace',
         id: 'eot',
-        getTs: auditResults => {
-          const ttiExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(ttiExt, 'value.timestamps.endOfTrace');
-        },
-        getTiming: auditResults => {
-          const ttiExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(ttiExt, 'value.timings.endOfTrace');
-        },
+        getTs: findValueInMetricsAuditFn('rawTraceEnd', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawTraceEnd', 'timing'),
       },
       {
         name: 'On Load',
         id: 'onload',
-        getTs: auditResults => {
-          const ttiExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(ttiExt, 'value.timestamps.onLoad');
-        },
-        getTiming: auditResults => {
-          const ttiExt = auditResults['first-meaningful-paint'].extendedInfo;
-          return safeGet(ttiExt, 'value.timings.onLoad');
-        },
+        getTs: findValueInMetricsAuditFn('rawLoad', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawLoad', 'timing'),
+      },
+      {
+        name: 'DOM Content Loaded',
+        id: 'dcl',
+        getTs: findValueInMetricsAuditFn('rawDomContentLoaded', 'timestamp'),
+        getTiming: findValueInMetricsAuditFn('rawDomContentLoaded', 'timing'),
       },
     ];
   }
