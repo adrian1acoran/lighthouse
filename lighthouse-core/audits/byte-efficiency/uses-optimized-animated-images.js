@@ -11,7 +11,7 @@
 const Audit = require('../audit');
 const WebInspector = require('../../lib/web-inspector');
 
-// the threshold for the size of GIFs wich we flag as unoptimized
+// the threshold for the size of GIFs which we flag as unoptimized
 const GIF_BYTE_THRESHOLD = 100 * 1024;
 
 class UsesOptimizedAnimatedImages extends Audit {
@@ -22,7 +22,7 @@ class UsesOptimizedAnimatedImages extends Audit {
     return {
       name: 'uses-optimized-animated-images',
       informative: true,
-      description: 'Use a video formats for animated content',
+      description: 'Use video formats for animated content',
       helpText: 'Large GIFs are inefficient for delivering animated content. Consider using ' +
         'MPEG4/WebM videos for animations and PNG/WebP for static images instead of GIF to save ' +
         'network bytes. [Learn more](https://en.wikipedia.org/wiki/Video_alternative_to_GIF)',
