@@ -103,15 +103,10 @@ async function runSmokehouse(smokes) {
     ].join(' ');
 
     // The promise ensures we output immediately, even if the process errors
-    const p = execAsync(cmd, {timeout: 3 * 60 * 1000, encoding: 'utf8'}).then(cp => {
-      const ret = {id: id, process: cp};
-      displaySmokehouseOutput(ret);
-      return ret;
-    }).catch(err => {
-      const ret = {id: id, error: err};
-      displaySmokehouseOutput(ret);
-      return ret;
-    });
+    const p = execAsync(cmd, {timeout: 3 * 60 * 1000, encoding: 'utf8'})
+      .then(cp => ({id: id, process: cp}))
+      .catch(err => ({id: id, error: err}))
+      .then(result => displaySmokehouseOutput(result));
 
     // If the machine is terribly slow, we'll run all smoketests in succession, not parallel
     if (process.env.APPVEYOR) {
@@ -124,9 +119,9 @@ async function runSmokehouse(smokes) {
 }
 
 /**
- *
+ * Determine batches of smoketests to run, based on argv
  * @param {string[]} argv
- * @return {Map<string, Array<SmoketestDfn>>}
+ * @return {Map<string|undefined, Array<SmoketestDfn>>}
  */
 function getSmoketestBatches(argv) {
   let smokes = [];
